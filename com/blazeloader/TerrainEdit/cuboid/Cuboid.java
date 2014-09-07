@@ -1,4 +1,4 @@
-package net.acomputerdog.TerrainEdit.cuboid;
+package com.blazeloader.TerrainEdit.cuboid;
 
 /**
  * Represents a rectangular cuboid specified by 2 sets of coordinates.
@@ -70,11 +70,11 @@ public class Cuboid {
         this.zPos2 = zPos2;
     }
 
-    public void setIsSet(boolean isSet){
-        this.isSet = isSet;
+    public void set() {
+        this.isSet = true;
     }
 
-    public boolean getIsSet(){
+    public boolean isSet() {
         return this.isSet;
     }
 
