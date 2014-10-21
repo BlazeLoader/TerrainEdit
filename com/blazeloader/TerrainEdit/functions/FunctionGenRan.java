@@ -2,12 +2,13 @@ package com.blazeloader.TerrainEdit.functions;
 
 import com.blazeloader.TerrainEdit.cuboid.Cuboid;
 import com.blazeloader.TerrainEdit.cuboid.CuboidTable;
+import com.blazeloader.TerrainEdit.main.BlazeModTerrainEdit;
+import com.blazeloader.TerrainEdit.main.BlockAccess;
 import com.blazeloader.TerrainEdit.main.CommandTE;
-import com.blazeloader.TerrainEdit.main.ModTerrainEdit;
 import com.blazeloader.TerrainEdit.undo.UndoList;
-import com.blazeloader.api.direct.base.api.chat.EChatColor;
-import com.blazeloader.api.direct.server.api.block.ApiBlockServer;
-import com.blazeloader.api.direct.server.api.block.ENotificationType;
+import com.blazeloader.api.api.block.ApiBlock;
+import com.blazeloader.api.api.block.NotificationType;
+import com.blazeloader.api.api.chat.ChatColor;
 import net.minecraft.block.Block;
 import net.minecraft.command.ICommandSender;
 
@@ -19,8 +20,9 @@ import java.util.Random;
 public class FunctionGenRan extends Function {
     private Random random = new Random("TerrainEdit".hashCode());
 
-    public FunctionGenRan(ModTerrainEdit baseMod, CommandTE baseCommand) {
+    public FunctionGenRan(BlazeModTerrainEdit baseMod, CommandTE baseCommand) {
         super(baseMod, baseCommand);
+        register();
     }
 
     /**
@@ -29,8 +31,8 @@ public class FunctionGenRan extends Function {
      * @return Return the name of the function.
      */
     @Override
-    public String getFunctionName() {
-        return "genran";
+    public String[] getFunctionNames() {
+        return new String[]{"genran"};
     }
 
     /**
@@ -43,10 +45,10 @@ public class FunctionGenRan extends Function {
     @Override
     public void execute(ICommandSender user, String[] args) {
         try {
-            Cuboid cuboid = CuboidTable.getCuboidForPlayer(user.getCommandSenderName());
+            Cuboid cuboid = CuboidTable.getCuboidForPlayer(user.getName());
             if (cuboid.isSet()) {
                 int chance = Integer.parseInt(args[1]);
-                Block block = ApiBlockServer.getBlockByNameOrId(args[2]);
+                Block block = ApiBlock.getBlockByNameOrId(args[2]);
                 int meta = 0;
                 if (args.length >= 4) {
                     meta = Integer.parseInt(args[3]);
@@ -56,17 +58,17 @@ public class FunctionGenRan extends Function {
                     for (int y = Math.min(cuboid.getYPos1(), cuboid.getYPos2()); y <= Math.max(cuboid.getYPos1(), cuboid.getYPos2()); y++) {
                         for (int z = Math.min(cuboid.getZPos1(), cuboid.getZPos2()); z <= Math.max(cuboid.getZPos1(), cuboid.getZPos2()); z++) {
                             if (random.nextInt(100) < chance) {
-                                ApiBlockServer.setBlockAt(user.getEntityWorld(), x, y, z, block, meta, ENotificationType.NOTIFY_CLIENTS.getType());
+                                BlockAccess.setBlockAt(user.getEntityWorld(), x, y, z, block, meta, NotificationType.NOTIFY_CLIENTS);
                             }
                         }
                     }
                 }
-                sendChatLine(user, EChatColor.COLOR_YELLOW + "Done.");
+                sendChatLine(user, ChatColor.COLOR_YELLOW + "Done.");
             } else {
-                sendChatLine(user, EChatColor.COLOR_RED + "You must select a cuboid first!  Use /te p1 and /te p2!");
+                sendChatLine(user, ChatColor.COLOR_RED + "You must select a cuboid first!  Use /te p1 and /te p2!");
             }
         } catch (NumberFormatException e) {
-            sendChatLine(user, EChatColor.COLOR_RED + "Invalid arguments!  Use /te genran <chance> <block> [metadata]");
+            sendChatLine(user, ChatColor.COLOR_RED + "Invalid arguments!  Use /te genran <chance> <block> [metadata]");
         }
     }
 
@@ -92,11 +94,6 @@ public class FunctionGenRan extends Function {
 
     @Override
     public String getFunctionUsage() {
-        return getFunctionName() + " <chance> <block> [metadata]";
-    }
-
-    @Override
-    public String[] getAliases() {
-        return new String[0];
+        return getFunctionNames()[0] + " <chance> <block> [metadata]";
     }
 }

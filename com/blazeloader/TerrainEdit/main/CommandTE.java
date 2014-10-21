@@ -1,8 +1,8 @@
 package com.blazeloader.TerrainEdit.main;
 
 import com.blazeloader.TerrainEdit.functions.*;
-import com.blazeloader.api.direct.base.api.chat.EChatColor;
-import com.blazeloader.api.direct.server.api.command.BLCommandBase;
+import com.blazeloader.api.api.chat.ChatColor;
+import com.blazeloader.api.api.command.BLCommandBase;
 import net.minecraft.command.ICommandSender;
 
 import java.util.HashMap;
@@ -12,10 +12,12 @@ import java.util.Map;
  * The base command for TerrainEdit.  Loads functions as sub-commands.
  */
 public class CommandTE extends BLCommandBase {
-    protected ModTerrainEdit baseMod;
-    public Map<String, Function> functionList = new HashMap<String, Function>();
+    protected final BlazeModTerrainEdit baseMod;
+    private final Map<String, Function> uniqueFunctions = new HashMap<String, Function>();
+    private final Map<String, Function> functionList = new HashMap<String, Function>();
+    public boolean functionListChanged = false;
 
-    public CommandTE(ModTerrainEdit baseMod) {
+    public CommandTE(BlazeModTerrainEdit baseMod) {
         super();
         this.baseMod = baseMod;
         new FunctionHelp(baseMod, this);
@@ -53,32 +55,60 @@ public class CommandTE extends BLCommandBase {
     public void processCommand(ICommandSender user, String[] args) {
         try {
             if (args.length == 0) {
-                sendChatLine(user, EChatColor.COLOR_RED + "Please specify a function using /te [function [args]].  Use /te help for more info.");
+                sendChatLine(user, ChatColor.COLOR_RED + "Please specify a function using /te [function [args]].  Use /te help for more info.");
             } else {
                 Function function = functionList.get(args[0]);
                 if (function != null) {
-                    if (function.getNumRequiredArgs() > args.length) {//must be greater because first index is function name!
-                        if (user.canCommandSenderUseCommand(function.getRequiredPermissionLevel(), "te " + function.getFunctionName())) {
+                    if (function.getNumRequiredArgs() <= args.length - 1) {//subtract 1 because first index is "te"
+                        if (user.canCommandSenderUseCommand(function.getRequiredPermissionLevel(), "te " + function.getFunctionNames()[0])) {
                             try {
                                 function.execute(user, args);
                             } catch (Exception e) {
-                                sendChatLine(user, EChatColor.COLOR_RED + "" + EChatColor.FORMAT_UNDERLINE + "An error occurred while executing the command!  Please tell a server administrator!");
-                                ModTerrainEdit.instance.logger.logError("Exception executing function " + function.getFunctionName() + "!", e);
+                                sendChatLine(user, ChatColor.COLOR_RED + "" + ChatColor.FORMAT_UNDERLINE + "An error occurred while executing the command!  Please tell a server administrator!");
+                                BlazeModTerrainEdit.instance.logger.logError("Exception executing function " + function.getFunctionNames()[0] + "!", e);
                             }
                         } else {
-                            sendChat(user, EChatColor.COLOR_RED + "You do not have permission to execute this command!");
+                            sendChat(user, ChatColor.COLOR_RED + "You do not have permission to execute this command!");
                         }
                     } else {
-                        sendChat(user, EChatColor.COLOR_RED + "Not enough args!  Use \"/te " + function.getFunctionUsage() + "\"!");
+                        sendChat(user, ChatColor.COLOR_RED + "Not enough args!  Use \"/te " + function.getFunctionUsage() + "\"!");
                     }
                 } else {
-                    sendChat(user, EChatColor.COLOR_RED + "Unknown function!  Use \"/te help\" for a list.");
+                    sendChat(user, ChatColor.COLOR_RED + "Unknown function!  Use \"/te help\" for a list.");
                 }
             }
 
         } catch (Exception e) {
-            sendChatLine(user, EChatColor.COLOR_RED + "" + EChatColor.FORMAT_UNDERLINE + "" + EChatColor.FORMAT_BOLD + "An unknown error occurred!  Please tell a server administrator!");
-            ModTerrainEdit.instance.logger.logError("Unknown exception occurred!", e);
+            sendChatLine(user, ChatColor.COLOR_RED.combine(ChatColor.FORMAT_UNDERLINE) + ChatColor.FORMAT_BOLD + "An unknown error occurred!  Please tell a server administrator!");
+            BlazeModTerrainEdit.instance.logger.logError("Unknown exception occurred!", e);
         }
+    }
+
+    public void registerFunction(String name, Function function) {
+        if (name == null || function == null) {
+            throw new IllegalArgumentException("Invalid function!");
+        }
+        if (functionList.put(name, function) != null) {
+            baseMod.logger.logWarning("Registering duplicate function: " + name);
+        }
+    }
+
+    public void registerUniqueFunction(String name, Function function) {
+        if (name == null || function == null) {
+            throw new IllegalArgumentException("Invalid function!");
+        }
+        functionListChanged = true;
+        registerFunction(name, function);
+        if (uniqueFunctions.put(name, function) != null) {
+            baseMod.logger.logWarning("Registering duplicate function: " + name);
+        }
+    }
+
+    public Map<String, Function> getFunctionList() {
+        return functionList;
+    }
+
+    public Map<String, Function> getUniqueFunctions() {
+        return uniqueFunctions;
     }
 }
